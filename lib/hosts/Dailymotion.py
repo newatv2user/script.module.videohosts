@@ -1,7 +1,7 @@
 '''
 Created on Feb 13, 2012
 
-@author: newatv2user
+@author: Vaio
 '''
 
 from VideoHosts import BaseVideoHost, Unique
@@ -19,7 +19,9 @@ class Dailymotion(BaseVideoHost):
     '''Media resolver for Dailymotion'''
     _patternsPL = [
         ('http://www.dailymotion.com/widget/jukebox?list[]=',
-         re.compile(r'http://www\.dailymotion\.com/widget/jukebox\?list\[]=%2Fplaylist%2F([^/%&"]+)'))        
+         re.compile(r'http://www\.dailymotion\.com/widget/jukebox\?list\[]=%2Fplaylist%2F([^/%&"]+)')),
+        ('http://www.dailymotion.com/playlist/',
+         re.compile(r'http://www\.dailymotion\.com/playlist/([^/%&"]+)'))        
         ]
     
     _patterns = [
@@ -29,8 +31,7 @@ class Dailymotion(BaseVideoHost):
         #        match.group(1)
         ('http://www.dailymotion.com/swf/video/', re.compile(r'http://www.dailymotion.com/swf/video/([^\?&"]+)')),
         ('http://www.dailymotion.com/embed/video/', re.compile(r'http://www.dailymotion.com/embed/video/([^\?&"]+)')),
-        ('http://www.dailymotion.com/video/', re.compile(r'http://www.dailymotion.com/video/([^\?&"><\']+)')),
-	('http://www.dailymotion.com/swf/', re.compile(r'http://www.dailymotion.com/swf/([^\?&"]+)'))
+        ('http://www.dailymotion.com/video/', re.compile(r'http://www.dailymotion.com/video/([^\?&"><\']+)'))
     ]
 
 
@@ -68,19 +69,14 @@ class Dailymotion(BaseVideoHost):
         for _, ptn in cls._patternsPL:
             matches1 = ptn.findall(src)
             for match in Unique(matches1):
-                #print match
-                #if match.find('PL', 0, 2) != -1:
-                    #print 'found PL'
-                #    match = match.replace('PL', '')
-                #print match
                 PLurl = 'http://www.dailymotion.com/playlist/' + match
                 req = urllib2.Request(PLurl)
                 req.add_header('User-Agent', 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.8.1.14) Gecko/20080404 Firefox/2.0.0.14')
                 response = urllib2.urlopen(req)
                 link = response.read()
                 response.close()
-                #PLItems = re.compile('dmco_link with_context not_ajax " id="([^"]+)"').findall(link)
-                PLItems = re.compile('href="(.+?)" class="dmco_simplelink video_title id_ dmco_link with_context not_ajax"').findall(link)
+                
+                PLItems = re.compile('class="dmco_simplelink.* href="(/video/.+?)"').findall(link)
                 for PLItem in Unique(PLItems):
                     #print PLItem
                     itemurl = url_ptn2 % PLItem
@@ -97,8 +93,6 @@ class Dailymotion(BaseVideoHost):
                 #print 'match found: ' + match
                 #if match == 'videoseries':
                 #    continue
-		if 'video' in match:
-		    continue
                 itemurl = url_ptn % match
                 vidurl = cls._get_media_url(itemurl)
                 #print vidurl
@@ -122,7 +116,7 @@ class Dailymotion(BaseVideoHost):
         #sequence = re.compile('"sequence",  "(.+?)"').findall(link)
         link = link.replace('\r\n', '').replace('\r', '').replace('\n', '')
         #print link
-        sequence = None
+        #sequence = None
         sequence = re.compile('"sequence":"(.+?)"').findall(link)
         #print 'resolving link step 3'
         if not sequence:            
@@ -130,12 +124,11 @@ class Dailymotion(BaseVideoHost):
             return None
                 
         newseqeunce = urllib2.unquote(sequence[0]).decode('utf8').replace('\\/', '/')
-        #print 'fucking newseq ' + newseqeunce
+        
         dm_low = re.compile('"sdURL":"(.+?)"').findall(newseqeunce)
         dm_high = re.compile('"hqURL":"(.+?)"').findall(newseqeunce)
         videoUrl = None
         
-        #print 'fucking dm high ' + str(len(dm_high))
         if dm_high is None or len(dm_high) == 0:
             videoUrl = dm_low[0]
         else:

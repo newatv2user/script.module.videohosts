@@ -1,0 +1,6 @@
+[B]Version 0.0.2[/B]
+  - Dailymotion fix
+  - Added movshare
+  
+[B]Version 0.0.1[/B]
+  - initial version
